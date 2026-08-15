@@ -25,14 +25,31 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "OIDC_TOKEN=$TOKEN" >> $GITHUB_ENV
 
-      - name: Send Login Request
-        run: |
-          curl -X POST https://quantman-login-api.onrender.com/login \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ env.OIDC_TOKEN }}" \
-            -d '{
-              "client_id": "${{ secrets.QUANTMAN_CLIENT_ID }}",
-              "password": "${{ secrets.QUANTMAN_PASSWORD }}",
-              "totp_secret": "${{ secrets.QUANTMAN_TOTP_SECRET }}",
-              "broker": "${{ secrets.BROKER }}"
-            }'
+      - name: Send Login Request with Auto-Retry
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3               # Try up to 3 times if it fails
+          retry_wait_seconds: 60        # Wait 60 seconds between each retry attempt
+          command: |
+            RESPONSE=$(curl -s -w "%{http_code}" -X POST https://quantman-login-api.onrender.com/login \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${{ env.OIDC_TOKEN }}" \
+              -d '{
+                "client_id": "${{ secrets.QUANTMAN_CLIENT_ID }}",
+                "password": "${{ secrets.QUANTMAN_PASSWORD }}",
+                "totp_secret": "${{ secrets.QUANTMAN_TOTP_SECRET }}",
+                "broker": "${{ secrets.BROKER }}"
+              }')
+              
+            HTTP_CODE="${RESPONSE: -3}"
+            BODY="${RESPONSE%???}"
+            
+            echo "Response Code: $HTTP_CODE"
+            echo "Response Body: $BODY"
+            
+            # If the server doesn't return a 200 OK, fail the step so the retry action kicks in
+            if [ "$HTTP_CODE" -ne 200 ]; then
+              echo "Error: API call failed with status $HTTP_CODE"
+              exit 1
+            fi
