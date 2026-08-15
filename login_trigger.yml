@@ -1,0 +1,38 @@
+name: Trigger QuantMan API Login
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-login]
+
+# REQUIRED: Grants permission to generate the GitHub OIDC token
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-login:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API Root to Wake Instance
+        run: |
+          curl -s https://quantman-login-api.onrender.com/
+
+      - name: Fetch Secure GitHub OIDC Token
+        id: get_token
+        run: |
+          TOKEN=$(curl -sLS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=render-api-audience" | jq -r '.value')
+          echo "::add-mask::$TOKEN"
+          echo "OIDC_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Send Login Request
+        run: |
+          curl -X POST https://quantman-login-api.onrender.com/login \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ env.OIDC_TOKEN }}" \
+            -d '{
+              "client_id": "${{ secrets.QUANTMAN_CLIENT_ID }}",
+              "password": "${{ secrets.QUANTMAN_PASSWORD }}",
+              "totp_secret": "${{ secrets.QUANTMAN_TOTP_SECRET }}",
+              "broker": "${{ secrets.BROKER }}"
+            }'
