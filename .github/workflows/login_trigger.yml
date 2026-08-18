@@ -18,13 +18,6 @@ jobs:
         run: |
           curl -s https://quantman-login-api.onrender.com/
 
-      - name: Fetch Secure GitHub OIDC Token
-        id: get_token
-        run: |
-          TOKEN=$(curl -sLS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=render-api-audience" | jq -r '.value')
-          echo "::add-mask::$TOKEN"
-          echo "OIDC_TOKEN=$TOKEN" >> $GITHUB_ENV
-
       - name: Send Login Request with Auto-Retry
         uses: nick-fields/retry@v3
         with:
@@ -32,22 +25,30 @@ jobs:
           max_attempts: 3               # Try up to 3 times if it fails
           retry_wait_seconds: 60        # Wait 60 seconds between each retry attempt
           command: |
+            # Fetch a FRESH GitHub OIDC token on every attempt. These tokens are
+            # short-lived (a few minutes) — if we fetched one only once before the
+            # retry loop and reused it, a slow first attempt could make a later
+            # (otherwise-valid) retry get rejected with "Signature has expired"
+            # instead of actually retrying the login.
+            TOKEN=$(curl -sLS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=render-api-audience" | jq -r '.value')
+            echo "::add-mask::$TOKEN"
+
             RESPONSE=$(curl -s -w "%{http_code}" -X POST https://quantman-login-api.onrender.com/login \
               -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${{ env.OIDC_TOKEN }}" \
+              -H "Authorization: Bearer $TOKEN" \
               -d '{
                 "client_id": "${{ secrets.QUANTMAN_CLIENT_ID }}",
                 "password": "${{ secrets.QUANTMAN_PASSWORD }}",
                 "totp_secret": "${{ secrets.QUANTMAN_TOTP_SECRET }}",
                 "broker": "${{ secrets.BROKER }}"
               }')
-              
+
             HTTP_CODE="${RESPONSE: -3}"
             BODY="${RESPONSE%???}"
-            
+
             echo "Response Code: $HTTP_CODE"
             echo "Response Body: $BODY"
-            
+
             # If the server doesn't return a 200 OK, fail the step so the retry action kicks in
             if [ "$HTTP_CODE" -ne 200 ]; then
               echo "Error: API call failed with status $HTTP_CODE"
