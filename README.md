@@ -60,7 +60,7 @@ This is what lets the admin trigger your login automatically every day, on the t
 
 Two things, sent together:
 
-1. **Message the notification bot first:** open Telegram, search for **@DailyAutoLoginBot**, and send it `/start`. Bots can't message you first — this has to happen before anything else in this step will actually reach you.
+1. **Message the notification bot first:** open Telegram, search for **@DailyAutoLogin_bot**, and send it `/start`. Bots can't message you first — this has to happen before anything else in this step will actually reach you.
 2. **Send your details to the admin.** Use the setup form (ask the admin for the link) or send this directly via WhatsApp/Telegram to **9704291506** or email **hemugarlapati@gmail.com**:
    - Your name
    - GitHub username
