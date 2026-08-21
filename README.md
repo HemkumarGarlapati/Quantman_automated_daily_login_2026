@@ -1,6 +1,6 @@
 # QuantMan Auto-Login
 
-Automatically log in to your broker account every weekday morning — no servers to run, no manual effort, and your password never leaves your own GitHub account.
+Automatically log in to your broker account every weekday morning — no servers to run, no manual effort, and your password never gets saved securely on your own GitHub account.
 
 Supports **AliceBlue** and **Flattrade**. Other brokers on request.
 
