@@ -4,7 +4,7 @@ Automatically log in to your broker account every weekday morning — no servers
 
 Supports **AliceBlue** and **Flattrade**. Other brokers on request.
 
-One-time set up, takes 5 minutes, works entirely on mobile
+One-time set up, takes 10 minutes, works entirely on mobile
 
 ---
 
