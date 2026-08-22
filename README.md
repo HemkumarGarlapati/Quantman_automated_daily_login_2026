@@ -64,7 +64,7 @@ This is what lets the admin trigger your login automatically every day, at the t
 
 ### Step 5 — Get whitelisted and set your schedule
 
-Open Telegram, search for **@DailyAutoLogin_bot**, and send it one message with:
+Open **[t.me/DailyAutoLogin_bot](https://t.me/DailyAutoLogin_bot)** (tap the link directly rather than searching by name — there's at least one other unrelated bot with a similar name, and this link takes you straight to the right one), and send it one message with:
 
 - Your GitHub username
 - Your User ID (broker client ID)
@@ -107,7 +107,7 @@ The entire process usually finishes in under a minute.
 ## Troubleshooting
 
 * **Unauthorized Error:** Make sure you completed **Step 5** — your GitHub username and Client ID need to be whitelisted on the backend server.
-* **Not getting Telegram alerts:** Confirm you messaged **@DailyAutoLogin_bot** as described in Step 5 — you should have gotten an instant reply confirming it went through. If you didn't, try sending it again.
+* **Not getting Telegram alerts:** Confirm you messaged the bot via the link in Step 5 (not by searching — there's a similarly-named but unrelated bot on Telegram) — you should have gotten an instant reply confirming it went through. If you didn't, try sending it again.
 * **Automatic runs never start:** Confirm you completed **Step 4** (installing the GitHub App) — without it, the admin's server has no way to trigger your workflow, even if you're fully whitelisted.
 * **Want to change your daily time?** Just message the admin — no need to redo any setup steps.
 
