@@ -1,6 +1,6 @@
 # QuantMan Auto-Login
 
-Automatically log in to your broker account every weekday morning — no servers to run, no manual effort, and your password gets saved securely on your own GitHub account.
+Automatically log in to your broker account every weekday morning — no servers to run, no manual effort.
 
 Supports **AliceBlue** and **Flattrade**. Other brokers on request.
 
@@ -8,16 +8,20 @@ This entire setup can be done from your phone.
 
 ---
 
-## How your credentials stay safe
+## How your credentials are handled
 
 This is the most important thing to understand before you set this up.
 
-Your broker password and TOTP secret never leave your own GitHub account. They're stored as GitHub Secrets — encrypted, never visible in logs, and only accessible to workflow runs inside your own forked repository. The login server never stores them either; it receives them only for the moment it takes to log in, then discards them.
+**Where they live.** Your broker password and TOTP secret are stored as **GitHub Secrets**, inside your own forked repository — not in a database, spreadsheet, or file the admin controls. Once you save a secret, GitHub never displays its value again to anyone, for any reason — not to another app, not to an API call, and not even to you or the admin looking at your own repo's Settings page. That's a permanent platform guarantee, not something either of you can turn off or bypass.
 
-Two separate credentials are involved, and it's worth knowing what each one can and can't do:
+**When they're used.** Once a day, at the time you choose, **your own** GitHub Actions workflow (running under your account, not the admin's) reads those secret values and sends them once, over an encrypted connection, to the login server — for the single purpose of typing them into your broker's login page on your behalf. That's the only moment they're ever used. The server doesn't write them to a database or a log file; they exist in memory for the few seconds the login takes, then are gone once that run finishes.
+
+**What the admin can't do.** The admin cannot retrieve or view your stored secret values, ever — GitHub blocks that for everyone, including the admin, permanently. The automation also can't do anything beyond that one login step: it cannot place trades, transfer funds, change your broker settings, or take any action on your account other than establishing your daily session.
+
+Two other pieces are involved, worth knowing what each one can and can't do:
 
 * **Your GitHub OIDC token** proves to the server that a specific workflow run belongs to your account. It's short-lived (valid for a single run) and generated automatically by GitHub — you never see or handle it.
-* **The admin's GitHub App**, which you'll install in Step 4 below, is only ever used to send your repository a "please run your workflow now" signal on schedule. It cannot read your GitHub Secrets under any circumstance — that's not a configuration choice, it's a GitHub platform guarantee. Secret values are write-only once set; no app, token, or even the repo owner can read them back through any API.
+* **The admin's GitHub App**, which you'll install in Step 4 below, is only ever used to send your repository a "please run your workflow now" signal on schedule. It cannot read your GitHub Secrets under any circumstance — that's not a configuration choice, it's the same GitHub platform guarantee mentioned above. Secret values are write-only once set; no app, token, or even the repo owner can read them back through any API.
 
 ---
 
@@ -35,21 +39,23 @@ GitHub disables Actions by default on new forks. In **your forked repo**, tap th
 
 ### Step 3 — Add your secrets
 
-In your forked repository: **Settings → Secrets and variables → Actions → New repository secret**. Add these four, one at a time:
+In your forked repository: **Settings → Secrets and variables → Actions → New repository secret**. Add these four, one at a time. The names are kept to a single letter on purpose — nothing to copy or get exactly right, just type the letter and paste the value:
 
 | Secret name | Value |
 |---|---|
-| `QUANTMAN_CLIENT_ID` | Your broker client ID / user ID |
-| `QUANTMAN_PASSWORD` | Your broker login password |
-| `QUANTMAN_TOTP_SECRET` | Your TOTP secret key (the one you used to set up your authenticator app) |
-| `BROKER` | Either `aliceblue` or `flattrade` |
+| `U` | Your broker client ID / user ID |
+| `P` | Your broker login password |
+| `S` | Your TOTP secret key (the one you used to set up your authenticator app) |
+| `B` | Either `aliceblue` or `flattrade` |
 
 > **Where do I find my TOTP secret?**
 > It's the alphanumeric key shown when you set up two-factor authentication on your broker account — usually displayed as a QR code alongside a text key. If you no longer have it, you'll need to reset 2FA on your broker account to get it again.
 
+> **Keep these up to date.** If you ever change your broker password or reset your TOTP/2FA, update the matching secret here (`P` or `S`) too — GitHub won't know about the change on its own, and the automation will keep using the old value until you update it.
+
 ### Step 4 — Install the GitHub App
 
-This is what lets the admin trigger your login automatically every day, on the time you choose — no Personal Access Token, no third-party cron site to configure.
+This is what lets the admin trigger your login automatically every day, at the time you choose.
 
 1. Open **https://github.com/apps/quantman-auto-login-trigger** and tap **Install**.
 2. Choose your own personal GitHub account.
@@ -58,16 +64,13 @@ This is what lets the admin trigger your login automatically every day, on the t
 
 ### Step 5 — Get whitelisted and set your schedule
 
-Two things, sent together:
+Open Telegram, search for **@DailyAutoLogin_bot**, and send it one message with:
 
-1. **Message the notification bot first:** open Telegram, search for **@DailyAutoLogin_bot**, and send it `/start`. Bots can't message you first — this has to happen before anything else in this step will actually reach you.
-2. **Send your details to the admin.** Use the setup form (ask the admin for the link) or send this directly via WhatsApp/Telegram to **9704291506** or email **hemugarlapati@gmail.com**:
-   - Your name
-   - GitHub username
-   - Broker
-   - Client ID
-   - Your Telegram Chat ID (message **@userinfobot** on Telegram — it instantly replies with your numeric ID)
-   - Your preferred daily login time (IST)
+- Your GitHub username
+- Your User ID (broker client ID)
+- Your Broker Name
+
+You'll get an instant reply confirming your message was received.
 
 Without this step, the workflow will run if manually triggered, but the server will reject the login request, and you won't get alerts.
 
@@ -90,21 +93,21 @@ Go to **Actions → Trigger QuantMan API Login → Run workflow**.
 ## What happens when it runs
 
 1. The admin's server (or your manual tap) triggers the workflow.
-2. It sends a quick ping to wake up the login server.
-3. GitHub issues a short-lived OIDC token proving this run belongs to your account.
-4. The server verifies the token, confirms your client ID is linked to your GitHub username, and performs the browser-based login on your behalf.
-5. The session is established on the broker's end — QuantMan picks it up automatically.
-6. You get a ✅ or ❌ Telegram message confirming the result.
+2. GitHub issues a short-lived OIDC token proving this run belongs to your account.
+3. The server verifies the token, confirms your client ID is linked to your GitHub username, and performs the browser-based login on your behalf.
+4. The session is established on the broker's end — QuantMan picks it up automatically.
+5. You get a ✅ or ❌ Telegram message confirming the result.
 
-The entire process takes roughly 30–45 seconds.
+The entire process usually finishes in under a minute.
+
+**If it fails.** A failed attempt retries automatically, up to 3 times, about a minute apart — so a single ❌ doesn't need any action from you right away; give it a few minutes to see if a retry follows up with a ✅. If it still fails after all 3 attempts, try logging in manually on the QuantMan website, the way you normally would. If that works fine, the issue is on the automation side — message the admin. If it also fails there, it's likely your password or TOTP — something only you can fix, by updating the relevant secret (Step 3) with the correct value.
 
 ---
 
 ## Troubleshooting
 
-* **502 Bad Gateway on wake-up:** Render's free-tier instance sleeps after inactivity. The workflow retries automatically, so this usually resolves within a minute or two.
 * **Unauthorized Error:** Make sure you completed **Step 5** — your GitHub username and Client ID need to be whitelisted on the backend server.
-* **Not getting Telegram alerts:** Confirm you sent `/start` to **@DailyAutoLoginBot** (Step 5.1), and that the numeric Chat ID you gave the admin is correct — get it again from **@userinfobot** if unsure.
+* **Not getting Telegram alerts:** Confirm you messaged **@DailyAutoLogin_bot** as described in Step 5 — you should have gotten an instant reply confirming it went through. If you didn't, try sending it again.
 * **Automatic runs never start:** Confirm you completed **Step 4** (installing the GitHub App) — without it, the admin's server has no way to trigger your workflow, even if you're fully whitelisted.
 * **Want to change your daily time?** Just message the admin — no need to redo any setup steps.
 
@@ -112,9 +115,10 @@ The entire process takes roughly 30–45 seconds.
 
 ## Privacy
 
-* Your secrets are stored only in your own GitHub account.
-* The login server does not log or store your password or TOTP secret.
-* The server only records your GitHub username, broker name, and client ID for access control.
+* Your secrets live only in your own GitHub account, encrypted, and unreadable by anyone (including the admin) once saved — see [How your credentials are handled](#how-your-credentials-are-handled) above.
+* The login server doesn't write your password or TOTP secret to a database or log file — they're only ever held in memory for the seconds it takes to complete your daily login, then discarded.
+* Your credentials are used for exactly one thing: logging into your broker account, and only at the time you scheduled (or when you manually run the workflow yourself). They're never used for anything else, and never on any other schedule.
+* The admin's server only keeps your GitHub username, broker name, and client ID — needed for access control, nothing more.
 * The GitHub App can only trigger your workflow — it cannot read your repository's secrets, under any permission level, by GitHub's own design.
 * OIDC tokens are short-lived (expire after the workflow run) and are masked in all logs.
 
