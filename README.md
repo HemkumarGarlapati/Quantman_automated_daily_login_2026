@@ -64,7 +64,7 @@ This is what lets the admin trigger your login automatically every day, at the t
 
 ### Step 5 — Get whitelisted and set your schedule
 
-Open **[t.me/DailyAutoLogin_bot](https://t.me/DailyAutoLogin_bot)** (tap the link directly rather than searching by name — there's at least one other unrelated bot with a similar name, and this link takes you straight to the right one), and send it one message with:
+Open **[t.me/DailyAutoLogin_bot](https://t.me/DailyAutoLogin_bot)** and send it one message with:
 
 - Your GitHub username
 - Your User ID (broker client ID)
